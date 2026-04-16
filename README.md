@@ -192,9 +192,35 @@ Configurez `MONTHLY_BUDGET_USD` dans `.env` pour recevoir une alerte si 80 % du 
 
 ---
 
+## 🧪 Tests
+
+```bash
+# Lancer toute la suite
+pytest
+
+# Un module en détail
+pytest tests/unit/test_evaluator.py -v
+
+# Avec couverture
+pytest --tb=short -q
+```
+
+Les tests couvrent `evaluator._parse_score`, `CostTracker` (accumulation, alertes budget, `summary`), `parse_json_response` et `deduplicate`. Aucun appel API réel : le client Anthropic est intégralement mocké via `unittest.mock`.
+
+---
+
 ## 📓 Utilisation dans Jupyter / notebooks
 
 Le notebook `notebooks/demo.ipynb` couvre l'ensemble du workflow avec visualisations Plotly.
+
+Il fonctionne **sans clé API** grâce à un mode mock activé par défaut :
+
+```python
+USE_MOCK = True   # ← charge les résultats pré-calculés depuis datasets/fixtures/
+                  #   passer à False pour des appels API réels
+```
+
+Les résultats de référence sont stockés dans `datasets/fixtures/demo_code_run.json` (run sur le dataset `code`, 3 itérations, meilleur score 8.50/10). Changer `USE_MOCK = False` nécessite une `ANTHROPIC_API_KEY` configurée dans `.env`.
 
 Jupyter fait déjà tourner une boucle asyncio — utilisez `arun()` avec `await` plutôt que `run()` pour éviter les conflits de contexte (Python 3.12+) :
 
@@ -234,10 +260,18 @@ promptforge/
 │   └── utils.py            ← parse_json_response, deduplicate, CostStats
 │
 ├── datasets/
-│   └── examples.py         ← 10 datasets de test
+│   ├── examples.py         ← 10 datasets de test
+│   └── fixtures/
+│       └── demo_code_run.json  ← Résultats pré-calculés pour le notebook (mode mock)
 │
 ├── notebooks/
-│   └── demo.ipynb          ← Démo complète avec visualisations Plotly
+│   └── demo.ipynb          ← Démo complète avec visualisations Plotly (USE_MOCK=True par défaut)
+│
+├── tests/
+│   └── unit/
+│       ├── test_evaluator.py   ← Tests de _parse_score et evaluate (client mocké)
+│       ├── test_cost_tracker.py← Tests d'accumulation, alertes budget, summary
+│       └── test_utils.py       ← Tests de parse_json_response et deduplicate
 │
 ├── results/                ← Runs JSON + checkpoints (gitignorés)
 │

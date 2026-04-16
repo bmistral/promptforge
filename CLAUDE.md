@@ -63,6 +63,15 @@ All three components share a single `CostTracker` instance (passed at constructi
 
 **`datasets/examples.py`** provides 10 built-in datasets, each a dict with `initial_prompt`, `task`, and `examples` (`list[{"input": ..., "expected_output": ...}]`).
 
+**`datasets/fixtures/demo_code_run.json`** stores a pre-computed `OptimizationRun` result (3 iterations on the `code` dataset, best score 8.50/10) used by the notebook in mock mode. Structure mirrors `OptimizationRun.to_dict()`.
+
+**`tests/unit/`** — 61 unit tests (pytest + `unittest.mock`). No real API calls; `anthropic.AsyncAnthropic` is patched at construction. Key files:
+- `test_evaluator.py` — `_parse_score` (JSON parsing, missing keys, clamping) + async `evaluate` with `AsyncMock`
+- `test_cost_tracker.py` — price resolution, accumulation, `track_from_usage`, budget alerts, `summary`
+- `test_utils.py` — `parse_json_response` (fences, embedded JSON, malformed) + `deduplicate`
+
+**`notebooks/demo.ipynb`** — `USE_MOCK = True` by default: loads the fixture without any API key. Set to `False` for real API calls. Seed fixed at `RANDOM_SEED = 42`.
+
 ## Key implementation notes
 
 - All API calls use `anthropic.AsyncAnthropic(max_retries=3)` with tenacity `@retry(wait=wait_exponential(min=1, max=10), stop=stop_after_attempt(3))`.
