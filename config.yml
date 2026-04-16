@@ -1,0 +1,10 @@
+metrics:
+  alpha: 0.5                    # poids global LLM-judge vs déterministe
+  semantic_model: paraphrase-multilingual-MiniLM-L12-v2
+  code_execution_timeout: 5     # secondes
+  dataset_overrides:
+    sentiment:  { alpha: 0.0 }  # déterministe pur (exact match)
+    language:   { alpha: 0.0 }  # déterministe pur (exact match)
+    ticket:     { alpha: 0.0 }  # déterministe pur (exact match)
+    security:   { alpha: 1.0 }  # LLM-judge pur (analyse complexe)
+    address:    { alpha: 1.0 }  # LLM-judge pur (pas de métrique déterministe)
