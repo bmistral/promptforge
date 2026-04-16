@@ -7,7 +7,7 @@
 [![Anthropic](https://img.shields.io/badge/Claude-API-orange)](https://anthropic.com)
 [![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
 
-Un prompt mal écrit peut diviser par 3 la qualité d'un LLM. **PromptForge** prend un prompt naïf, génère des variantes, les évalue automatiquement via un LLM-as-judge, et itère jusqu'à trouver le prompt optimal — sans intervention humaine.
+Un prompt mal écrit peut diviser par 3 la qualité d'un LLM. **PromptForge** prend un prompt naïf, génère des variantes, les évalue automatiquement via un LLM-as-judge couplé à des métriques déterministes, et itère jusqu'à trouver le prompt optimal — sans intervention humaine.
 
 ---
 
@@ -31,11 +31,14 @@ Prompt naïf
                │
                ▼
 ┌─────────────────────────────────────────┐
-│  ÉVALUATION (LLM-as-Judge, parallèle)   │
-│  Score chaque variante sur :            │
+│  ÉVALUATION HYBRIDE (parallèle)         │
+│  LLM-as-Judge :                         │
 │  • Clarté des instructions    (0-3)     │
 │  • Qualité des sorties        (0-4)     │
 │  • Robustesse / généralisation (0-3)    │
+│  Métriques déterministes :              │
+│  • exact_match / ROUGE-L / F1 / …      │
+│  Score final = α × LLM + (1-α) × Det   │
 └──────────────┬──────────────────────────┘
                │
                ▼
@@ -57,6 +60,7 @@ Prompt naïf
 
 - **Génération automatique** de variantes (few-shot, chain-of-thought, rôle, format...)
 - **LLM-as-judge** : Claude évalue objectivement chaque prompt sur vos exemples
+- **Score hybride** : combine le LLM-judge avec des métriques déterministes/sémantiques par dataset (exact match, ROUGE-L, F1 token, similarité sémantique…) via un coefficient α configurable
 - **Algorithme évolutionnaire** : sélection des meilleurs, mutation, croisement
 - **10 datasets intégrés** : résumé, sentiment, extraction, code, adresse, langue, ticket, regex, feedback, sécurité
 - **Deux modes d'évaluation** : simulation mentale (rapide) ou exécution réelle avec `--execute` (~3× plus fiable)
@@ -82,8 +86,9 @@ uv sync
 
 # Ou avec pip
 pip install -e .
+pip install -e ".[metrics]"   # métriques déterministes (ROUGE-L, sentence-transformers)
 pip install -e ".[notebook]"  # pour les notebooks Jupyter
-pip install -e ".[dev]"       # pour pytest / ruff / mypy
+pip install -e ".[dev]"       # pour pytest / ruff / mypy + toutes les dépendances
 ```
 
 ### Configuration
@@ -139,18 +144,52 @@ si présentes. Format : une phrase directe, sans introduction.
 
 10 cas d'usage prêts à l'emploi, du plus simple au plus complexe :
 
-| Dataset | `--dataset` | Prompt initial naïf | Tâche |
-|---|---|---|---|
-| Résumé | `summarization` | `Résume ce texte.` | Résumer en une phrase concise |
-| Sentiment | `sentiment` | `Quel est le sentiment de ce texte ?` | Classifier positif / négatif / neutre |
-| Extraction | `extraction` | `Extrais les informations importantes.` | Extraire entités (personne, lieu, date…) |
-| Code Python | `code` | `Écris du code Python pour faire ça :` | Générer une fonction propre et documentée |
-| Adresse | `address` | `Reformate cette adresse.` | Normaliser au format standard |
-| Langue | `language` | `Quelle est la langue de ce texte ?` | Identifier et retourner le code ISO 639-1 |
-| Ticket support | `ticket` | `Donne la priorité de ce ticket.` | Classer critique / haute / moyenne / basse |
-| Regex | `regex` | `Écris une regex Python pour ce format.` | Générer une regex compilable et précise |
-| Feedback RH | `feedback` | `Reformule ce feedback pour qu'il soit constructif.` | Transformer un retour brut en feedback actionnable |
-| Audit sécu | `security` | `Analyse ce code pour trouver des problèmes de sécurité.` | Détecter vulnérabilités et proposer des corrections |
+| Dataset | `--dataset` | Prompt initial naïf | Tâche | Métrique déterministe |
+|---|---|---|---|---|
+| Résumé | `summarization` | `Résume ce texte.` | Résumer en une phrase concise | ROUGE-L |
+| Sentiment | `sentiment` | `Quel est le sentiment de ce texte ?` | Classifier positif / négatif / neutre | Exact match |
+| Extraction | `extraction` | `Extrais les informations importantes.` | Extraire entités (personne, lieu, date…) | F1 token |
+| Code Python | `code` | `Écris du code Python pour faire ça :` | Générer une fonction propre et documentée | Exécution subprocess |
+| Adresse | `address` | `Reformate cette adresse.` | Normaliser au format standard | LLM-judge seul |
+| Langue | `language` | `Quelle est la langue de ce texte ?` | Identifier et retourner le code ISO 639-1 | Exact match |
+| Ticket support | `ticket` | `Donne la priorité de ce ticket.` | Classer critique / haute / moyenne / basse | Exact match |
+| Regex | `regex` | `Écris une regex Python pour ce format.` | Générer une regex compilable et précise | Validité + cas de test |
+| Feedback RH | `feedback` | `Reformule ce feedback pour qu'il soit constructif.` | Transformer un retour brut en feedback actionnable | Similarité sémantique (70 %) + ratio longueur (30 %) |
+| Audit sécu | `security` | `Analyse ce code pour trouver des problèmes de sécurité.` | Détecter vulnérabilités et proposer des corrections | LLM-judge seul |
+
+---
+
+## ⚖️ Score hybride
+
+Le score final est un mélange pondéré du LLM-judge et des métriques déterministes :
+
+```
+score_final = α × score_llm_judge + (1 − α) × score_déterministe × 10
+```
+
+`α` est configurable dans `config.yml` (valeur globale et surcharges par dataset) et passé à `PromptEvaluator(alpha=...)` lors de l'initialisation. Si aucune métrique déterministe n'est disponible pour le dataset, `α` est automatiquement forcé à 1.0 (score LLM pur).
+
+**Recommandations par dataset :**
+
+| Dataset | α recommandé | Raison |
+|---|---|---|
+| `sentiment`, `language`, `ticket` | 0.0 | Exact match fiable à 100 % — le LLM-judge est redondant |
+| `summarization`, `extraction`, `feedback` | 0.3–0.5 | La métrique objective ancre le score, le LLM nuance |
+| `security`, `address` | 1.0 | Pas de métrique déterministe définie |
+
+Ces valeurs sont documentées dans `config.yml`.
+
+### Métriques disponibles
+
+| Fonction | Librairie | Datasets |
+|---|---|---|
+| `exact_match` | stdlib | sentiment, language, ticket |
+| `rouge_l` | `rouge-score` | summarization |
+| `f1_token` | stdlib | extraction |
+| `regex_validity` | `re` (stdlib) | regex |
+| `code_execution` | `subprocess` (stdlib) | code |
+| `semantic_similarity` | `sentence-transformers` | feedback |
+| `length_ratio_score` | stdlib | feedback (complément) |
 
 ---
 
@@ -187,7 +226,7 @@ Configurez `MONTHLY_BUDGET_USD` dans `.env` pour recevoir une alerte si 80 % du 
 --top-k        Meilleurs prompts conservés entre itérations (default: 2)
 --model        Modèle Claude (default: claude-haiku-4-5-20251001)
 --execute      Exécute réellement chaque prompt sur les exemples avant scoring
-               (plus fiable, ~3× plus d'appels API)
+               (plus fiable, ~3× plus d'appels API ; active le score hybride)
 --resume       Reprend un run depuis un fichier checkpoint JSON
 ```
 
@@ -196,17 +235,27 @@ Configurez `MONTHLY_BUDGET_USD` dans `.env` pour recevoir une alerte si 80 % du 
 ## 🧪 Tests
 
 ```bash
-# Lancer toute la suite
+# Lancer toute la suite (111 tests)
 pytest
 
 # Un module en détail
 pytest tests/unit/test_evaluator.py -v
+pytest tests/unit/test_metrics.py -v
 
 # Avec couverture
 pytest --tb=short -q
 ```
 
-Les tests couvrent `evaluator._parse_score`, `CostTracker` (accumulation, alertes budget, `summary`), `parse_json_response` et `deduplicate`. Aucun appel API réel : le client Anthropic est intégralement mocké via `unittest.mock`.
+La suite couvre :
+
+| Fichier | Ce qui est testé |
+|---|---|
+| `test_evaluator.py` | `_parse_score` (JSON, clamping, markdown fences) + `evaluate` simulé avec `AsyncMock` |
+| `test_cost_tracker.py` | Accumulation, alertes budget, `track_from_usage`, `summary` |
+| `test_utils.py` | `parse_json_response` + `deduplicate` |
+| `test_metrics.py` | 50 tests : toutes les métriques, lazy-loading `SentenceTransformer` (mocké), timeout subprocess boucle infinie |
+
+Aucun appel API réel : `anthropic.AsyncAnthropic` et `SentenceTransformer` sont intégralement mockés.
 
 ---
 
@@ -253,9 +302,10 @@ promptforge/
 │
 ├── core/
 │   ├── generator.py        ← Génération de variantes via Claude
-│   ├── evaluator.py        ← LLM-as-judge (scoring + feedback, 2 modes)
+│   ├── evaluator.py        ← Score hybride : LLM-judge + métriques déterministes (alpha)
 │   ├── optimizer.py        ← Mutation / croisement des meilleurs prompts
 │   ├── loop.py             ← Orchestration async, checkpoint, sélection
+│   ├── metrics.py          ← 7 métriques déterministes/sémantiques + DATASET_METRICS
 │   ├── cost_tracker.py     ← Suivi des coûts API + alertes budget (rich)
 │   ├── models.py           ← Dataclasses (OptimizationRun, IterationResult)
 │   └── utils.py            ← parse_json_response, deduplicate, CostStats
@@ -272,10 +322,12 @@ promptforge/
 │   └── unit/
 │       ├── test_evaluator.py   ← Tests de _parse_score et evaluate (client mocké)
 │       ├── test_cost_tracker.py← Tests d'accumulation, alertes budget, summary
-│       └── test_utils.py       ← Tests de parse_json_response et deduplicate
+│       ├── test_utils.py       ← Tests de parse_json_response et deduplicate
+│       └── test_metrics.py     ← 50 tests des métriques déterministes (sans réseau)
 │
 ├── results/                ← Runs JSON + checkpoints (gitignorés)
 │
+├── config.yml              ← Configuration du score hybride (alpha global + overrides)
 ├── .env.example            ← Variables d'environnement à configurer
 ├── .pre-commit-config.yaml ← Hooks ruff (lint + format)
 ├── pyproject.toml          ← Dépendances et config outils
@@ -298,7 +350,9 @@ promptforge/
 - [ ] Support multi-LLM (OpenAI, Mistral) pour comparer les judges
 - [ ] Interface Streamlit pour une utilisation no-code
 - [ ] Export du prompt optimisé vers un fichier `.txt` / `.yaml`
-- [ ] Métriques automatiques complémentaires (BLEU, ROUGE pour le résumé)
+- [x] Métriques automatiques complémentaires (ROUGE-L, F1 token, similarité sémantique)
+- [ ] Test cases intégrés par dataset pour les métriques `regex` et `code`
+- [ ] Chargement automatique des overrides alpha depuis `config.yml` au démarrage
 - [ ] Support de prompts système vs prompts utilisateur
 
 ---
