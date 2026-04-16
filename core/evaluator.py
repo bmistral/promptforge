@@ -31,7 +31,13 @@ Format : {"score": <float 0-10>, "feedback": "<explication concise>"}
 class PromptEvaluator:
     """Évaluateur de prompts LLM utilisant Claude comme juge expert."""
 
-    def __init__(self, model: str = "claude-haiku-4-5-20251001", execute: bool = False, tracker: Optional[CostTracker] = None):
+    def __init__(
+        self,
+        model: str = "claude-haiku-4-5-20251001",
+        execute: bool = False,
+        tracker: Optional[CostTracker] = None,
+        alpha: float = 0.5,
+    ):
         """
         Initialise l'évaluateur de prompts.
 
@@ -39,17 +45,23 @@ class PromptEvaluator:
             model: Modèle Claude à utiliser (défaut : claude-haiku-4-5-20251001).
             execute: Si True, exécute réellement le prompt sur les exemples.
             tracker: Instance CostTracker partagée (optionnel).
+            alpha: Poids du LLM-judge dans le score final (0.0 à 1.0).
+                   1 - alpha est le poids des métriques déterministes.
+                   Si aucune métrique déterministe n'est disponible pour le dataset,
+                   alpha est forcé à 1.0 automatiquement.
         """
         self.client = anthropic.AsyncAnthropic(max_retries=3)
         self.model = model
         self.execute = execute
         self.tracker = tracker or CostTracker()
+        self.alpha = max(0.0, min(1.0, alpha))
 
     async def evaluate(
         self,
         prompt: str,
         examples: list[dict],
         task_description: Optional[str] = None,
+        dataset_name: Optional[str] = None,
     ) -> tuple[float, str]:
         """
         Évalue un prompt candidat sur des exemples entrée/sortie attendus.
@@ -62,12 +74,16 @@ class PromptEvaluator:
             prompt: Le prompt à évaluer.
             examples: Liste de {"input": ..., "expected_output": ...}.
             task_description: Contexte optionnel de la tâche.
+            dataset_name: Nom du dataset pour activer les métriques déterministes
+                          (utilisé uniquement en mode execute=True).
 
         Returns:
             Tuple (score float 0-10, feedback string).
         """
         if self.execute and examples:
-            return await self._evaluate_with_execution(prompt, examples, task_description)
+            return await self._evaluate_with_execution(
+                prompt, examples, task_description, dataset_name
+            )
         return await self._evaluate_simulated(prompt, examples, task_description)
 
     async def _execute_prompt(self, prompt: str, input_text: str) -> str:
@@ -94,15 +110,19 @@ class PromptEvaluator:
         prompt: str,
         examples: list[dict],
         task_description: Optional[str],
+        dataset_name: Optional[str] = None,
     ) -> tuple[float, str]:
         """
         Exécute le prompt sur les exemples en parallèle, puis soumet les vraies
         sorties au juge pour une évaluation basée sur les résultats réels.
+        Si dataset_name est fourni, combine le score LLM-judge avec les métriques
+        déterministes selon le ratio alpha.
 
         Args:
             prompt: Le prompt à évaluer.
             examples: Liste des exemples d'entrée/sortie attendue.
             task_description: Description optionnelle de la tâche.
+            dataset_name: Nom du dataset pour les métriques déterministes (optionnel).
 
         Returns:
             Tuple (score float 0-10, feedback string).
@@ -140,7 +160,26 @@ class PromptEvaluator:
             messages=[{"role": "user", "content": judge_message}],
         )
         self.tracker.track_from_usage(self.model, response.usage)
-        return self._parse_score(response.content[0].text)
+        llm_score, feedback = self._parse_score(response.content[0].text)
+
+        # Score hybride : combine LLM-judge et métriques déterministes
+        if dataset_name:
+            from core.metrics import compute_deterministic_score
+
+            det_scores = []
+            for ex, actual in zip(sample, actual_outputs):
+                det = compute_deterministic_score(dataset_name, actual, ex["expected_output"])
+                if det is not None:
+                    det_scores.append(det)
+
+            if det_scores:
+                avg_det = sum(det_scores) / len(det_scores)
+                final = self.alpha * llm_score + (1.0 - self.alpha) * avg_det * 10.0
+                final = min(max(final, 0.0), 10.0)
+                print(f"  📊 Scores — LLM: {llm_score:.2f}, Det: {avg_det:.3f}, Final: {final:.2f}")
+                return final, feedback
+
+        return llm_score, feedback
 
     async def _evaluate_simulated(
         self,
