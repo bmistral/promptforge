@@ -1,0 +1,43 @@
+# Environnements & secrets
+.env
+.env.*
+!.env.example
+*.key
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# Cache outils
+.ruff_cache/
+.mypy_cache/
+
+# Données de runs (générées, trop volumineuses pour git)
+results/
+
+# Tests / couverture
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Build / packaging
+*.egg-info/
+dist/
+build/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# IDE
+.vscode/
+.idea/
+
+# Claude Code — local settings only (contain machine-specific paths)
+.claude/settings.local.json
+
+# Notebook results
+notebooks/results/
+
+# OS
+.DS_Store
