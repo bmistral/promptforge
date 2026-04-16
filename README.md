@@ -2,6 +2,7 @@
 
 > **Auto-optimisation de prompts par boucle agentique — inspiré de DSPy et OPRO**
 
+![Tests](https://github.com/bmistral/promptforge/actions/workflows/tests.yml/badge.svg)
 [![Python](https://img.shields.io/badge/Python-3.11%2B-blue)](https://python.org)
 [![Anthropic](https://img.shields.io/badge/Claude-API-orange)](https://anthropic.com)
 [![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
