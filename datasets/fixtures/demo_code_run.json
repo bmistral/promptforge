@@ -1,0 +1,137 @@
+{
+  "initial_prompt": "Écris du code Python pour faire ça :",
+  "task_description": "Générer une fonction Python propre et documentée à partir d'une description",
+  "examples": [
+    {
+      "input": "Une fonction qui calcule la moyenne d'une liste de nombres en ignorant les valeurs None",
+      "expected_output": "def calculate_mean(values: list) -> float:\n    \"\"\"Calcule la moyenne en ignorant les None.\"\"\"\n    clean = [v for v in values if v is not None]\n    return sum(clean) / len(clean) if clean else 0.0"
+    },
+    {
+      "input": "Une fonction qui vérifie si une chaîne est un palindrome (insensible à la casse et aux espaces)",
+      "expected_output": "def is_palindrome(s: str) -> bool:\n    \"\"\"Vérifie si s est un palindrome.\"\"\"\n    cleaned = s.lower().replace(\" \", \"\")\n    return cleaned == cleaned[::-1]"
+    }
+  ],
+  "iterations": [
+    {
+      "iteration": 1,
+      "candidates": [
+        {
+          "prompt": "Écris du code Python pour faire ça :",
+          "score": 0.5,
+          "feedback": "Le prompt est beaucoup trop vague et n'a aucune valeur pratique. Il ne précise pas la langue (même si Python est mentionné), ne demande aucune documentation, aucun type hint, aucune gestion d'erreurs. Il produira du code minimal non documenté, totalement inadapté à un contexte professionnel."
+        },
+        {
+          "prompt": "En tant qu'expert Python, écris une fonction pour la tâche suivante : [DESCRIPTION]\nLa fonction doit inclure des type hints et une docstring explicative.",
+          "score": 6.5,
+          "feedback": "Nette amélioration avec l'attribution d'un rôle et les exigences de base. Il manque cependant des précisions sur le format de la docstring, la gestion des cas limites et des exceptions, et les exemples d'utilisation. Les critères de qualité restent relativement vagues."
+        },
+        {
+          "prompt": "Tu es un développeur Python expérimenté. Génère une fonction Python complète et documentée pour : [DESCRIPTION]\n\nExigences :\n- Type hints complets (paramètres et retour)\n- Docstring claire (description, Args, Returns)\n- Gestion des cas d'erreur courants\n- Code respectant PEP 8",
+          "score": 7.2,
+          "feedback": "Prompt bien structuré avec des critères explicites. Points forts : rôle défini, type hints, docstring avec sections, PEP 8. Points d'amélioration : pas de format précis pour la docstring (Google/NumPy), manque de mention des cas limites spécifiques (None, listes vides), et l'exemple d'utilisation n'est pas demandé. La mention 'cas d'erreur courants' reste subjective."
+        },
+        {
+          "prompt": "Écris du code Python propre et bien documenté pour réaliser : [DESCRIPTION]\n\n- Utilise des type hints sur tous les paramètres et la valeur retournée\n- Ajoute une docstring complète\n- Gère les cas limites évidents\n- Suis les conventions PEP 8",
+          "score": 6.5,
+          "feedback": "Structure correcte mais les instructions restent génériques. La docstring n'a pas de format imposé, la gestion des cas limites n'est pas suffisamment précisée, et il manque une demande explicite d'exemple d'utilisation ou d'exceptions nommées. Légèrement en retrait par rapport à la variante précédente."
+        },
+        {
+          "prompt": "Génère une fonction Python de qualité production pour : [DESCRIPTION]\n\nCritères requis :\n1. Type hints complets sur paramètres et valeur de retour\n2. Docstring au format Google (description, Args, Returns, Raises)\n3. Gestion des cas limites : None, listes vides, valeurs invalides avec TypeError ou ValueError\n4. Code PEP 8 concis (max 25 lignes docstring incluse)\n5. Exemple d'utilisation commenté (# fn(x) → y)",
+          "score": 7.5,
+          "feedback": "Le prompt est clair et demande du code de qualité production avec bonnes pratiques (PEP 8, docstrings, gestion erreurs). Points forts : spécification du format Google pour la docstring, mention des cas limites avec exceptions typées, exemple commenté, limite de longueur. La progression par rapport au prompt initial est importante. Points d'amélioration : la limite 25 lignes peut contraindre pour des fonctions complexes."
+        }
+      ],
+      "best_prompt": "Génère une fonction Python de qualité production pour : [DESCRIPTION]\n\nCritères requis :\n1. Type hints complets sur paramètres et valeur de retour\n2. Docstring au format Google (description, Args, Returns, Raises)\n3. Gestion des cas limites : None, listes vides, valeurs invalides avec TypeError ou ValueError\n4. Code PEP 8 concis (max 25 lignes docstring incluse)\n5. Exemple d'utilisation commenté (# fn(x) → y)",
+      "best_score": 7.5,
+      "avg_score": 5.64
+    },
+    {
+      "iteration": 2,
+      "candidates": [
+        {
+          "prompt": "Tu es un expert Python senior. Pour implémenter : [DESCRIPTION]\n\nFournis une fonction avec :\n- Signature typée complète (PEP 484)\n- Docstring Google avec sections Args, Returns, Raises et un exemple\n- Validation des entrées (TypeError si type incorrect, ValueError si valeur invalide)\n- Gestion explicite de None, collections vides et valeurs limites\n- Budget : 30 lignes max, zéro dépendance externe",
+          "score": 8.2,
+          "feedback": "Prompt très bien structuré combinant les points forts des meilleures variantes précédentes. Les critères sont précis et actionnables. Points forts : validation d'entrée différenciée (TypeError vs ValueError), budget lignes, contrainte de dépendances. Points d'amélioration mineurs : 'zéro dépendance externe' pourrait être précisé (stdlib autorisée ?), et l'exemple dans la docstring pourrait être illustré par un mini-exemple dans le prompt lui-même."
+        },
+        {
+          "prompt": "Je dois implémenter cette fonctionnalité Python : [DESCRIPTION]. Fournis le code source complet avec : 1) type hints explicites pour paramètres et retour, 2) une docstring détaillée (description brève, paramètres, valeur retournée, exceptions levées), 3) la gestion des cas limites spécifiques (None, listes vides, valeurs invalides) avec ValueError ou TypeError appropriés, 4) deux exemples d'utilisation en commentaire illustrant un cas normal et un cas d'erreur. Le code doit être production-ready, concis et suivre PEP 8 sans sur-ingénierie.",
+          "score": 8.5,
+          "feedback": "Le prompt est très clair et structuré avec des critères précis (type hints, docstring détaillée, gestion d'erreurs, exemples). Il définit bien les attentes sans sur-contraindre. Points forts : demande de deux exemples (nominal + erreur), mention explicite de production-ready, anti-pattern sur-ingénierie évité. Très bon équilibre entre complétude et concision du prompt lui-même."
+        },
+        {
+          "prompt": "Rôle : expert Python production. Tâche : [DESCRIPTION]\n\nStructure imposée :\n```\ndef nom_fonction(param: Type) -> Type:\n    \"\"\"[Description]\n    Args:\n        param (Type): description\n    Returns:\n        Type: description  \n    Raises:\n        TypeError: si ...\n        ValueError: si ...\n    Example:\n        >>> fn(x)  # → résultat\n    \"\"\"\n    # Validation\n    ...\n    # Logique\n    ...\n```\nContraintes : PEP 8, max 30 lignes, 0 import externe.",
+          "score": 8.2,
+          "feedback": "Structure très détaillée avec template de code imposé. Points forts : template explicite pour la docstring Google, exemple doctest intégré, contraintes claires. Points d'amélioration : le template peut trop contraindre le modèle sur la structure plutôt que la logique; la section validation/logique séparée est une bonne pratique mais peut générer du boilerplate excessif pour des fonctions simples."
+        },
+        {
+          "prompt": "Génère une implémentation Python production de : [DESCRIPTION]\n\nRègles non négociables :\n1. Type hints PEP 484 sur tous les paramètres et le retour\n2. Docstring Google complète avec Args, Returns, Raises, et example\n3. Validation des types en entrée (lever TypeError si type incorrect)\n4. Validation des valeurs (lever ValueError si valeur sémantiquement incorrecte)\n5. Gestion de None et collections vides\n6. PEP 8 strict, max 30 lignes, pas de bibliothèques tierces",
+          "score": 8.2,
+          "feedback": "Prompt solide avec critères hiérarchisés et non négociables. La distinction TypeError/ValueError est excellente et actionnable. Les contraintes de longueur et dépendances sont claires. Point d'amélioration : manque la demande d'exemple d'utilisation commenté en dehors de la docstring, ce qui aide à tester visuellement le comportement attendu."
+        },
+        {
+          "prompt": "Expert Python, génère le code pour : [DESCRIPTION]\n\nAttentes précises :\n- def nom(params: Types) -> Type avec types exacts\n- Docstring Google : 1 ligne résumé, Args (nom/type/description), Returns, Raises\n- Lever TypeError pour types incorrects, ValueError pour valeurs invalides\n- Cas limites couverts : None sur tout paramètre nullable, list/str vide, valeurs extrêmes\n- 2 assertions commentées : cas nominal et cas d'erreur\n- PEP 8 : nommage snake_case, lignes ≤ 88 chars, max 25 lignes code seul",
+          "score": 8.2,
+          "feedback": "Prompt très précis avec détails fins (88 chars de ligne, 25 lignes code seul, snake_case). Les assertions commentées remplacent avantageusement les exemples de la docstring pour les cas d'utilisation. Points d'amélioration : '88 chars' est la valeur Black/Ruff mais pas PEP 8 standard (79) — à clarifier selon les conventions du projet cible."
+        },
+        {
+          "prompt": "Python senior dev here. Implement: [DESCRIPTION]\n\nDeliverable: a single production-ready function with:\n• Full PEP 484 type annotations (params + return)\n• Google-style docstring: one-line summary, Args (name, type, desc), Returns, Raises, and a one-liner Example\n• Input validation: TypeError for wrong types, ValueError for invalid values\n• Edge-case handling: None inputs, empty sequences, boundary values\n• Two inline comments showing normal and error usage: # fn(x) → y / # fn(None) → raises\n• PEP 8 compliant, ≤ 30 lines total, stdlib-only",
+          "score": 8.2,
+          "feedback": "Prompt en anglais bien structuré avec des critères complets. Points forts : bullet points clairs, inline comments pour les deux cas d'usage, contrainte stdlib-only explicite. Point d'amélioration : l'utilisation de l'anglais dans un contexte français peut créer une inconsistance si les docstrings attendues doivent être en français. Le niveau de détail est excellent."
+        }
+      ],
+      "best_prompt": "Je dois implémenter cette fonctionnalité Python : [DESCRIPTION]. Fournis le code source complet avec : 1) type hints explicites pour paramètres et retour, 2) une docstring détaillée (description brève, paramètres, valeur retournée, exceptions levées), 3) la gestion des cas limites spécifiques (None, listes vides, valeurs invalides) avec ValueError ou TypeError appropriés, 4) deux exemples d'utilisation en commentaire illustrant un cas normal et un cas d'erreur. Le code doit être production-ready, concis et suivre PEP 8 sans sur-ingénierie.",
+      "best_score": 8.5,
+      "avg_score": 8.25
+    },
+    {
+      "iteration": 3,
+      "candidates": [
+        {
+          "prompt": "Je dois implémenter cette fonctionnalité Python : [DESCRIPTION]. Fournis le code source complet avec : 1) type hints explicites pour paramètres et retour, 2) une docstring détaillée (description brève, paramètres, valeur retournée, exceptions levées), 3) la gestion des cas limites spécifiques (None, listes vides, valeurs invalides) avec ValueError ou TypeError appropriés, 4) deux exemples d'utilisation en commentaire illustrant un cas normal et un cas d'erreur. Le code doit être production-ready, concis et suivre PEP 8 sans sur-ingénierie.",
+          "score": 8.5,
+          "feedback": "Prompt très bien structuré avec critères explicites et mesurables. Les instructions sont claires sur PEP 8, type hints, format de docstring et gestion des cas limites. Points forts : demande de deux exemples (nominal + erreur), équilibre production-ready / sans sur-ingénierie, phrase unique et dense. Le prompt optimisé est stable et résilient — il génère du code de haute qualité de façon robuste."
+        },
+        {
+          "prompt": "Tu es un expert Python senior spécialisé en code production. Tâche : [DESCRIPTION]\n\nGénère une fonction suivant cette structure immuable :\n\n**1. Signature** : type hints PEP 484 complets\n**2. Docstring Google** : résumé 1 ligne, Args (type+desc), Returns (type+desc), Raises (conditions précises), Example (1 appel→résultat)\n**3. Validation entrées** : TypeError si type incorrect, ValueError si valeur invalide\n**4. Cas limites** : None sur paramètres nullables, collections vides, valeurs extrêmes\n**5. Concision** : max 30 lignes (docstring incluse), 0 import externe",
+          "score": 8.2,
+          "feedback": "Prompt très structuré et précis avec des instructions claires et immuables. Points forts : spécification détaillée de chaque section (signature, validation, docstring Google), contraintes PEP 8, limite de 30 lignes. Points d'amélioration : la contrainte de concision (30 lignes) peut entrer en conflit avec la validation exhaustive demandée; absence d'exemple concret du prompt lui-même rendant difficile la vérification de la sortie réelle."
+        },
+        {
+          "prompt": "Tu es un expert Python chargé de générer du code production. Tâche : [DESCRIPTION]\n\n**Règles non négociables :**\n\n1. **Type hints systématiques** : tous les paramètres et la valeur retournée\n2. **Docstring Google structurée** : résumé, Args, Returns, Raises, Example\n3. **Validation robuste** : TypeError (mauvais type), ValueError (valeur invalide)\n4. **Cas limites** : None, séquences vides, valeurs limites\n5. **Exemples inline** : `# fn(valide) → résultat` et `# fn(invalide) → raise`\n6. **Budget** : 30 lignes max, stdlib only, priorité clarté > concision",
+          "score": 8.2,
+          "feedback": "Prompt très structuré avec règles explicites et hiérarchisées. Excellente clarté sur les attentes (type hints, validation, docstring Google, PEP 8). Les exemples inline sont pertinents. Points forts : spécifications détaillées, budget de 30 lignes, priorités claires (clarté > concision). Points faibles mineurs : 'zéro dépendance externe' pourrait être précisé, et le prompt ne montre pas de sortie attendue pour valider la généralisation."
+        },
+        {
+          "prompt": "Rôle : Tu es un architecte Python production senior.\nObjectif : Transformer la description suivante en une fonction Python de qualité production.\n\nCritères d'évaluation :\n- Signature typée PEP 484 (paramètres + retour)\n- Docstring Google (résumé, Args, Returns, Raises, Example 1 ligne)\n- TypeError pour types incorrects, ValueError pour valeurs invalides\n- Cas limites : None, vide, hors bornes\n- Commentaires d'usage : `# appel_normal → résultat` et `# appel_erreur → raise XError`\n- PEP 8 strict, max 30 lignes (docstring incluse), pas d'import non-stdlib\n\nDescription : [DESCRIPTION]",
+          "score": 8.2,
+          "feedback": "Prompt très structuré avec critères clairs et hiérarchisés. Points forts : spécification détaillée du style Google, exigences de validation explicites, contrainte de concision (30 lignes). Points faibles : manque d'exemple d'entrée/sortie dans le prompt lui-même (référence vague à 'description suivante'), pas de clarification sur la gestion des exceptions multiples, et la contrainte PEP 8 sur 88 caractères pourrait entrer en conflit avec la documentation détaillée."
+        },
+        {
+          "prompt": "Implémente en Python la fonctionnalité suivante : [DESCRIPTION]\n\nExigences de qualité :\n- Type hints PEP 484 sur tous les paramètres et le retour\n- Docstring Google complète : résumé, Args (type + description), Returns, Raises\n- Validation des entrées : TypeError si type incorrect, ValueError si valeur invalide\n- Gestion des cas limites : None, collections vides, valeurs hors domaine\n- Deux exemples commentés : cas passant et cas d'échec attendu\n- PEP 8, max 30 lignes total, dépendances stdlib uniquement\n- Code production-ready : pas de sur-ingénierie, complexité adaptée à la tâche",
+          "score": 8.2,
+          "feedback": "Prompt équilibré et complet. La demande de deux exemples commentés (passant + échec) est un excellent critère de qualité. La mention 'complexité adaptée à la tâche' est une bonne guideline anti-over-engineering. Points d'amélioration : identique aux variantes précédentes, le prompt ne précise pas le format exact de la docstring, ce qui peut varier selon les modèles."
+        },
+        {
+          "prompt": "Génère une fonction Python production pour : [DESCRIPTION]\n\nSpécifications :\n1. def nom(params: Types) -> Type — annotations PEP 484 complètes\n2. Docstring Google : une ligne résumé + Args (nom, type, description) + Returns (type, description) + Raises (exception, condition) + Example (appel → résultat)\n3. Lever TypeError si le type d'un paramètre est incorrect\n4. Lever ValueError si la valeur est sémantiquement invalide\n5. Couvrir : paramètres None nullables, séquences vides, valeurs aux bornes\n6. Deux commentaires inline : `# cas nominal : fn(x) → y` et `# cas erreur : fn(z) → raise TypeError`\n7. PEP 8, ≤ 30 lignes (docstring comprise), bibliothèque standard uniquement",
+          "score": 8.2,
+          "feedback": "Prompt très détaillé avec spécifications numérotées et précises. La séparation TypeError/ValueError est bien expliquée. Points forts : format exacte de la docstring précisé, les deux commentaires inline typés, contrainte stricte sur les dépendances. Le niveau de détail est idéal pour générer du code homogène et prévisible sur différents exemples."
+        }
+      ],
+      "best_prompt": "Je dois implémenter cette fonctionnalité Python : [DESCRIPTION]. Fournis le code source complet avec : 1) type hints explicites pour paramètres et retour, 2) une docstring détaillée (description brève, paramètres, valeur retournée, exceptions levées), 3) la gestion des cas limites spécifiques (None, listes vides, valeurs invalides) avec ValueError ou TypeError appropriés, 4) deux exemples d'utilisation en commentaire illustrant un cas normal et un cas d'erreur. Le code doit être production-ready, concis et suivre PEP 8 sans sur-ingénierie.",
+      "best_score": 8.5,
+      "avg_score": 8.25
+    }
+  ],
+  "best_prompt": "Je dois implémenter cette fonctionnalité Python : [DESCRIPTION]. Fournis le code source complet avec : 1) type hints explicites pour paramètres et retour, 2) une docstring détaillée (description brève, paramètres, valeur retournée, exceptions levées), 3) la gestion des cas limites spécifiques (None, listes vides, valeurs invalides) avec ValueError ou TypeError appropriés, 4) deux exemples d'utilisation en commentaire illustrant un cas normal et un cas d'erreur. Le code doit être production-ready, concis et suivre PEP 8 sans sur-ingénierie.",
+  "best_score": 8.5,
+  "timestamp": "2026-04-16T01:07:26.009587",
+  "cost_summary": {
+    "total_cost_usd": 0.0464,
+    "api_calls": 24,
+    "input_tokens": 13987,
+    "output_tokens": 6481,
+    "cache_read_tokens": 0,
+    "cache_write_tokens": 0,
+    "cache_hit_pct": 0.0
+  }
+}
